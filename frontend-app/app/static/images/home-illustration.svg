@@ -20,8 +20,10 @@
   
   <!-- Heart Icon -->
   <circle cx="450" cy="170" r="50" fill="#4e73df" opacity="0.2"/>
-  <path d="M450 190 L435 175 C430 170 430 160 435 155 C440 150 450 150 455 155 L450 160 L445 155 C440 150 430 150 425 155 C420 160 420 170 425 175 Z" fill="#4e73df"/>
-  
+  <circle cx="450" cy="170" r="30" fill="#4e73df"/>
+  <!-- Heart shape -->
+  <path d="M450 180 L440 170 C437 167 437 162 440 159 C443 156 447 158 450 161 C453 158 457 156 460 159 C463 162 463 167 460 170 L450 180 Z" fill="white" stroke="white" stroke-width="1.35"/>
+
   <!-- Decorative Elements -->
   <circle cx="100" cy="100" r="15" fill="#4e73df" opacity="0.2"/>
   <circle cx="500" cy="100" r="10" fill="#4e73df" opacity="0.2"/>
