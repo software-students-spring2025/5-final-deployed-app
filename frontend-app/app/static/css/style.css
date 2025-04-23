@@ -1,0 +1,109 @@
+/* MiniShare Custom Styles */
+
+/* General Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Post Card Styles */
+.post-card {
+    transition: transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.post-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.post-image {
+    max-height: 500px;
+    object-fit: contain;
+    background-color: #f8f9fa;
+}
+
+/* Comments Section */
+.comments-section {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.comment-item {
+    transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Profile Styles */
+.profile-avatar {
+    color: #6c757d;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .post-image {
+        max-height: 300px;
+    }
+}
+
+/* Custom Button Styles */
+.btn-primary {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+.btn-primary:hover {
+    background-color: #2e59d9;
+    border-color: #2653d4;
+}
+
+/* Navbar Customization */
+.navbar-brand {
+    font-weight: bold;
+    color: #4e73df !important;
+}
+
+/* Footer Styling */
+footer {
+    margin-top: auto;
+}
+
+/* Card Header Customization */
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+/* Form Input Focus */
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+}
+
+/* Custom Alert Styles */
+.alert {
+    border-radius: 4px;
+    border-left: 4px solid transparent;
+}
+
+.alert-success {
+    border-left-color: #1cc88a;
+}
+
+.alert-danger {
+    border-left-color: #e74a3b;
+}
+
+.alert-info {
+    border-left-color: #36b9cc;
+}

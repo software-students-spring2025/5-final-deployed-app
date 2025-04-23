@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}MiniShare - Share Your Moments{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="p-4">
+            <h1 class="display-4 fw-bold">Share your moments with the world</h1>
+            <p class="lead">MiniShare is a simple platform for sharing images and connecting with friends.</p>
+            <div class="mt-4">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-user-plus"></i> Register
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <img src="{{ url_for('static', filename='images/home-illustration.svg') }}" alt="MiniShare" class="img-fluid">
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <h2 class="mb-4">Why MiniShare?</h2>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Share Photos</h4>
+                <p class="card-text">Capture and share your favorite moments with friends and followers.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Connect</h4>
+                <p class="card-text">Comment on posts and engage with the community.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Simple</h4>
+                <p class="card-text">Clean, intuitive interface focused on content sharing.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
