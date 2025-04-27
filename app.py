@@ -8,6 +8,15 @@ from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user
 from db.mongo_client import get_user_collection
+from forms import LoginForm
+from werkzeug.security import check_password_hash
+from flask_login import UserMixin
+
+class User(UserMixin):
+    def __init__(self, id, username, password_hash):
+        self.id = str(id)  
+        self.username = username
+        self.password_hash = password_hash
 
 
 # Create Flask application
@@ -31,6 +40,12 @@ mongo_uri = "mongodb+srv://lgl1876523678:1017@cluster0.k8xwe.mongodb.net/?retryW
 client = MongoClient(mongo_uri)
 db = client['project5_db']    
 users_collection = db['userInfo']
+# Get User By ID
+def get_user_by_id(user_id):
+    user = users_collection.find_one({"_id": user_id})
+    if user:
+        return User(user['_id'], user['username'], user['password'])
+    return None
 
 # Setup Flask-Login loader
 login_manager = LoginManager(app)
@@ -82,8 +97,28 @@ def register():
         return render_template('register.html', form=form)
 
 @auth_bp.route('/login')
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    return "<h3>Login page coming soon!</h3>"
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+
+        # 查找数据库中是否有这个email的用户
+        user = users_collection.find_one({"email": email})
+
+        if user and check_password_hash(user['password'], password):
+            # 登录成功，建立session
+            user_obj = User(user['_id'], user['username'], user['password'])  # 需要你有一个User类（像之前mock_data里一样）
+            login_user(user_obj)
+            flash('Login Success！', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid email or password.', 'danger')
+            return redirect(url_for('auth.login'))
+
+    return render_template('login.html', form=form)
 
 @auth_bp.route('/logout')
 @login_required

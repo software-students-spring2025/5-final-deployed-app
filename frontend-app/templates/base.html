@@ -12,7 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+
+<!-- Add flex feature 4/27/25-->
+<body class="d-flex flex-column min-vh-100">
+    
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
@@ -84,14 +87,14 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main class="py-4">
+    <main class="flex-fill py-4">
         <div class="container">
             {% block content %}{% endblock %}
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-light py-3 mt-5">
+    <footer class="bg-light py-3">
         <div class="container text-center">
             <p class="mb-0">© 2025 MiniShare | Lightweight App</p>
         </div>
