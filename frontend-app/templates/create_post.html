@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Create Post - MiniShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-plus-circle"></i> Create New Post</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Image</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        <div class="form-text">Select an image to share (JPG, PNG, GIF).</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="caption" class="form-label">Caption</label>
+                        <textarea class="form-control" id="caption" name="caption" rows="3" required></textarea>
+                        <div class="form-text">Write something about your image.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('main.feed') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Share Post
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Image Preview -->
+        <div class="card mt-4" id="imagePreview" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">Image Preview</h5>
+            </div>
+            <div class="card-body text-center">
+                <img id="preview" src="#" alt="Preview" class="img-fluid" style="max-height: 400px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Image preview functionality
+    document.getElementById('image').addEventListener('change', function(event) {
+        const preview = document.getElementById('preview');
+        const previewCard = document.getElementById('imagePreview');
+        
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewCard.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
