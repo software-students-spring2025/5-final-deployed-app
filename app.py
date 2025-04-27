@@ -60,11 +60,11 @@ def register():
 
         # Email & Username Checking
         existing_user = users_collection.find_one({
-            "$or": [{"email": email}, {"username": username}]
+            "$or": [{"email": email}]
         })
 
         if existing_user:
-            flash('Name or Email already used！', 'danger')
+            flash('Email already been used！', 'danger')
             return redirect(url_for('auth.register'))
 
         hashed_password = generate_password_hash(password)
