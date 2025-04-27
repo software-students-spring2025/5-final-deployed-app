@@ -15,7 +15,7 @@
         
         {% if posts %}
             {% for post in posts %}
-                <div class="card mb-4 post-card">
+                <div class="card mb-4 post-card" id="post-{{ post._id }}">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
                             <a href="{{ url_for('main.profile', username=post.author) }}" class="text-decoration-none">
@@ -23,8 +23,10 @@
                                 <strong>{{ post.author }}</strong>
                             </a>
                         </div>
-                             <!-- Revised, replace the split methond 4/17/25 -->
-                        <small class="text-muted">{{ post.created_at|replace('T', ' ') }}</small>
+                        <!-- Display date in better format -->
+                        <small class="text-muted relative-time" data-timestamp="{{ post.created_at }}">
+                            {{ post.created_at|replace('T', ' ') }}
+                        </small>
                     </div>
                     
                     <!-- Post Image -->
@@ -49,8 +51,10 @@
                                                         {{ comment.commenter }}
                                                     </a>
                                                 </strong>
-                                                      <!-- Revised, replace the split methond -->
-                                                     <small class="text-muted">{{ post.created_at|replace('T', ' ') }}</small>
+                                                <!-- Fixed comment date display -->
+                                                <small class="text-muted relative-time" data-timestamp="{{ comment.created_at }}">
+                                                    {{ comment.created_at|replace('T', ' ') }}
+                                                </small>
                                             </div>
                                             <p class="mb-0">{{ comment.text }}</p>
                                         </div>
@@ -101,7 +105,7 @@
             </div>
             <div class="card-body">
                 <p>MiniShare is a simple platform for sharing images and connecting with friends.</p>
-                <p class="mb-0 small">This is a student project for the Software Engineering course.</p>
+                <p class="mb-0 small">We hope to bring joy and ease to your life! </p>
             </div>
         </div>
     </div>
