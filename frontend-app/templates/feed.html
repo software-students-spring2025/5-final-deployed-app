@@ -23,7 +23,8 @@
                                 <strong>{{ post.author }}</strong>
                             </a>
                         </div>
-                        <small class="text-muted">{{ post.created_at|replace('T', ' ').split('.')[0] }}</small>
+                             <!-- Revised, replace the split methond 4/17/25 -->
+                        <small class="text-muted">{{ post.created_at|replace('T', ' ') }}</small>
                     </div>
                     
                     <!-- Post Image -->
@@ -48,7 +49,8 @@
                                                         {{ comment.commenter }}
                                                     </a>
                                                 </strong>
-                                                <small class="text-muted">{{ comment.created_at|replace('T', ' ').split('.')[0] }}</small>
+                                                      <!-- Revised, replace the split methond -->
+                                                     <small class="text-muted">{{ post.created_at|replace('T', ' ') }}</small>
                                             </div>
                                             <p class="mb-0">{{ comment.text }}</p>
                                         </div>

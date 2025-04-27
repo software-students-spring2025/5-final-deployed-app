@@ -1,7 +1,0 @@
-flask
-flask-login
-werkzeug
-python-dotenv
-pytest
-pytest-flask
-pytest-cov
