@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ username }}'s Profile - MiniShare{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Info -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-circle fa-lg me-2"></i>{{ username }}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% set user = get_user_by_username(username) %}
+                {% if user %}
+                    <p class="text-muted">{{ user.bio or "No bio available." }}</p>
+                    <p class="small text-muted">
+                        <i class="fas fa-calendar-alt"></i> Joined 
+                        <span class="relative-time" data-timestamp="{{ user.created_at }}">
+                            {{ user.created_at|replace('T', ' ') }}
+                        </span>
+                    </p>
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <strong>{{ posts|length }}</strong>
+                            <div class="small text-muted">Posts</div>
+                        </div>
+                        <!-- For future implementation -->
+                        <div class="me-3">
+                            <strong>0</strong>
+                            <div class="small text-muted">Followers</div>
+                        </div>
+                        <div>
+                            <strong>0</strong>
+                            <div class="small text-muted">Following</div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        User not found.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Posts -->
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>{{ username }}'s Posts</h3>
+            {% if current_user.username == username %}
+                <a href="{{ url_for('main.create_post') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> New Post
+                </a>
+            {% endif %}
+        </div>
+        
+        {% if posts %}
+            <div class="row">
+                {% for post in posts %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 post-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ post.author }}</strong>
+                                </div>
+                                <small class="text-muted">{{ post.created_at|replace('T', ' ') }}</small>
+                            </div>
+                            <!-- Post Image -->
+                            <img src="{{ post.image_url }}" class="card-img-top post-image" alt="Post by {{ post.author }}">
+                            <div class="card-body">
+                                <p class="card-text">{{ post.caption }}</p>
+                                
+                                {% set comments = get_post_comments(post._id) %}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-comments"></i> {{ comments|length }} comments
+                                    </small>
+                                    <a href="{{ url_for('main.feed') }}#post-{{ post._id }}" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No posts found.
+                {% if current_user.username == username %}
+                    <a href="{{ url_for('main.create_post') }}" class="alert-link">Create your first post!</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
