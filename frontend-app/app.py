@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from datetime import datetime
+from flask import send_file
+from io import BytesIO
 
 class User(UserMixin):
     def __init__(self, id, username, email, password_hash, bio="", created_at=None):
@@ -153,6 +155,18 @@ from flask import Blueprint
 # Main blueprint
 main_bp = Blueprint('main', __name__)
 
+@main_bp.route('/image/<post_id>')
+def serve_image(post_id):
+    post = posts_collection.find_one({"_id": ObjectId(post_id)})
+    if not post or 'image_data' not in post:
+        flash('Image not found', 'danger')
+        return redirect(url_for('main.feed'))
+    
+    image_data = post['image_data']
+    mimetype = post.get('image_mimetype', 'image/jpeg')
+    
+    return send_file(BytesIO(image_data), mimetype=mimetype)
+
 @main_bp.route('/')
 def index():
     return render_template('index.html')
@@ -185,17 +199,16 @@ def create_post():
             flash('Both caption and image are required!', 'danger')
             return render_template('create_post.html')
             
-        # Save image
-        filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{image.filename}"
-        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        image.save(image_path)
+        # Revised Image Storage Method
+        image_data = image.read()
         
         # Create post in database
         post_data = {
-            "author": current_user.username,
-            "image_url": f"/static/uploads/{filename}",  # Fix URL path
-            "caption": caption,
-            "created_at": datetime.now().isoformat()
+        "author": current_user.username,
+        "caption": caption,
+        "created_at": datetime.now().isoformat(),
+        "image_data": image_data,  
+        "image_mimetype": image.mimetype   
         }
         
         result = posts_collection.insert_one(post_data)
