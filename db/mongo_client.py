@@ -1,9 +1,10 @@
+import os
+from dotenv import load_dotenv
 from pymongo import MongoClient
 
-MONGO_URI = "mongodb+srv://lgl1876523678:1017@cluster0.k8xwe.mongodb.net/?retryWrites=true&w=majority"
+load_dotenv()
 
-
-client = MongoClient(MONGO_URI)
+client = os.environ.get("MONGO_URI")
 
 def get_db():
 
