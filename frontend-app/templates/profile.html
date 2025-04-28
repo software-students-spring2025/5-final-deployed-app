@@ -22,20 +22,46 @@
                             {{ user.created_at|replace('T', ' ') }}
                         </span>
                     </p>
-                    <div class="d-flex">
+                    <div class="d-flex mb-3">
                         <div class="me-3">
                             <strong>{{ posts|length }}</strong>
                             <div class="small text-muted">Posts</div>
                         </div>
-                        <!-- For future implementation -->
                         <div class="me-3">
-                            <strong>0</strong>
-                            <div class="small text-muted">Followers</div>
+                            <a href="{{ url_for('main.followers', username=username) }}" class="text-decoration-none">
+                                <strong>{{ get_followers(username)|length }}</strong>
+                                <div class="small text-muted">Followers</div>
+                            </a>
                         </div>
                         <div>
-                            <strong>0</strong>
-                            <div class="small text-muted">Following</div>
+                            <a href="{{ url_for('main.following', username=username) }}" class="text-decoration-none">
+                                <strong>{{ get_following(username)|length }}</strong>
+                                <div class="small text-muted">Following</div>
+                            </a>
                         </div>
+                    </div>
+                    
+                    <!-- Follow/unfollow and edit profile buttons -->
+                    <div class="d-flex">
+                        {% if current_user.username == username %}
+                            <a href="{{ url_for('main.edit_profile') }}" class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-user-edit"></i> Edit Profile
+                            </a>
+                        {% else %}
+                            {% if is_following(current_user.username, username) %}
+                                <form method="POST" action="{{ url_for('main.unfollow', username=username) }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-user-minus"></i> Unfollow
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('main.follow', username=username) }}">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-user-plus"></i> Follow
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="alert alert-warning">

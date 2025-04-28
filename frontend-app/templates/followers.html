@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ username }}'s Followers - MiniShare{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-users"></i> {{ username }}'s Followers</h3>
+                <a href="{{ url_for('main.profile', username=username) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Profile
+                </a>
+            </div>
+            <div class="card-body">
+                {% if followers %}
+                    <div class="list-group">
+                        {% for follower in followers %}
+                            <a href="{{ url_for('main.profile', username=follower.username) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-user-circle fa-lg me-2"></i>
+                                        <strong>{{ follower.username }}</strong>
+                                        {% if follower.bio %}
+                                            <small class="text-muted ms-2">{{ follower.bio|truncate(50) }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Following since 
+                                        <span class="relative-time" data-timestamp="{{ follower.followed_at }}">
+                                            {{ follower.followed_at|replace('T', ' ') }}
+                                        </span>
+                                    </small>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> {{ username }} has no followers yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
