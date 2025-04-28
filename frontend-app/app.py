@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from forms import RegistrationForm, LoginForm
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from datetime import datetime
 
@@ -42,6 +43,7 @@ db = client['project5_db']
 users_collection = db['userInfo']
 posts_collection = db['posts']
 comments_collection = db['comments']
+follows_collection = db['follows']  # New collection to store user follow relationships
 
 # Setup Flask-Login
 login_manager = LoginManager(app)
@@ -81,12 +83,68 @@ def get_user_by_username(username):
         )
     return None
 
+def get_followers(username):
+    """Get the list of users following a specified user"""
+    followers_docs = list(follows_collection.find({"following": username}))
+    
+    # Get complete user information
+    followers = []
+    for doc in followers_docs:
+        user_doc = users_collection.find_one({"username": doc["follower"]})
+        if user_doc:
+            follower = User(
+                user_doc['_id'],
+                user_doc['username'],
+                user_doc['email'],
+                user_doc['password'],
+                user_doc.get('bio', ''),
+                user_doc.get('created_at')
+            )
+            # Add follow timestamp
+            follower.followed_at = doc.get("created_at")
+            followers.append(follower)
+    
+    return followers
+
+def get_following(username):
+    """Get the list of users that a specified user is following"""
+    following_docs = list(follows_collection.find({"follower": username}))
+    
+    # Get complete user information
+    following = []
+    for doc in following_docs:
+        user_doc = users_collection.find_one({"username": doc["following"]})
+        if user_doc:
+            followed_user = User(
+                user_doc['_id'],
+                user_doc['username'],
+                user_doc['email'],
+                user_doc['password'],
+                user_doc.get('bio', ''),
+                user_doc.get('created_at')
+            )
+            # Add follow timestamp
+            followed_user.following_since = doc.get("created_at")
+            following.append(followed_user)
+    
+    return following
+
+def is_following(follower_username, followed_username):
+    """Check if a user is following another user"""
+    return follows_collection.find_one({
+        "follower": follower_username,
+        "following": followed_username
+    }) is not None
+
 # Make utility functions available in templates
 @app.context_processor
 def utility_processor():
     return dict(
         get_post_comments=get_post_comments,
-        get_user_by_username=get_user_by_username
+        get_user_by_username=get_user_by_username,
+        get_followers=get_followers,
+        get_following=get_following,
+        is_following=is_following
     )
 
 # Create blueprints
@@ -175,6 +233,130 @@ def add_comment(post_id):
         flash('Failed to add comment!', 'danger')
         
     return redirect(request.referrer or url_for('main.feed'))
+
+@main_bp.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        bio = request.form.get('bio')
+        
+        # Check if email is already used by another user
+        existing_user = users_collection.find_one({
+            "email": email,
+            "_id": {"$ne": ObjectId(current_user.id)}
+        })
+        
+        if existing_user:
+            flash('Email already registered by another user!', 'danger')
+            return render_template('edit_profile.html')
+        
+        # Handle avatar upload
+        avatar_filename = None
+        if 'avatar' in request.files and request.files['avatar'].filename:
+            avatar = request.files['avatar']
+            if avatar:
+                # Ensure filename is secure
+                avatar_filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg")
+                avatar_path = os.path.join(app.config['UPLOAD_FOLDER'], avatar_filename)
+                avatar.save(avatar_path)
+        
+        # Update database
+        update_data = {
+            "email": email,
+            "bio": bio
+        }
+        
+        if avatar_filename:
+            update_data["avatar"] = f"/static/uploads/{avatar_filename}"
+        
+        users_collection.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$set": update_data}
+        )
+        
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('main.profile', username=current_user.username))
+    
+    return render_template('edit_profile.html')
+
+@main_bp.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow(username):
+    # Check if user to follow exists
+    user_to_follow = get_user_by_username(username)
+    if not user_to_follow:
+        flash('User not found', 'danger')
+        return redirect(url_for('main.feed'))
+    
+    # Check if already following
+    if is_following(current_user.username, username):
+        flash(f'You are already following {username}', 'info')
+        return redirect(url_for('main.profile', username=username))
+    
+    # Cannot follow self
+    if current_user.username == username:
+        flash('You cannot follow yourself', 'danger')
+        return redirect(url_for('main.profile', username=username))
+    
+    # Create follow relationship
+    follow_data = {
+        "follower": current_user.username,
+        "following": username,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    follows_collection.insert_one(follow_data)
+    
+    flash(f'You are now following {username}', 'success')
+    return redirect(url_for('main.profile', username=username))
+
+@main_bp.route('/unfollow/<username>', methods=['POST'])
+@login_required
+def unfollow(username):
+    # Check if user to unfollow exists
+    user_to_unfollow = get_user_by_username(username)
+    if not user_to_unfollow:
+        flash('User not found', 'danger')
+        return redirect(url_for('main.feed'))
+    
+    # Check if already following
+    if not is_following(current_user.username, username):
+        flash(f'You are not following {username}', 'info')
+        return redirect(url_for('main.profile', username=username))
+    
+    # Delete follow relationship
+    follows_collection.delete_one({
+        "follower": current_user.username,
+        "following": username
+    })
+    
+    flash(f'You have unfollowed {username}', 'success')
+    return redirect(url_for('main.profile', username=username))
+
+@main_bp.route('/profile/<username>/followers')
+@login_required
+def followers(username):
+    # Check if user exists
+    user = get_user_by_username(username)
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('main.feed'))
+    
+    followers = get_followers(username)
+    return render_template('followers.html', username=username, followers=followers)
+
+@main_bp.route('/profile/<username>/following')
+@login_required
+def following(username):
+    # Check if user exists
+    user = get_user_by_username(username)
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('main.feed'))
+    
+    following = get_following(username)
+    return render_template('following.html', username=username, following=following)
 
 # Auth blueprint
 auth_bp = Blueprint('auth', __name__)
