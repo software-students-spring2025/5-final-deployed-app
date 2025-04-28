@@ -2,6 +2,7 @@ import os
 import sys
 from bson import ObjectId
 from flask import Flask, render_template, redirect, url_for, flash, request
+from dotenv import load_dotenv
 from forms import RegistrationForm, LoginForm
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -20,20 +21,22 @@ class User(UserMixin):
     def check_password(self, password):
         return check_password_hash(self._password_hash, password)
 
+load_dotenv()
+
 # Create Flask application
 app = Flask(
     __name__,
     template_folder='templates',
     static_folder='static'
 )
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_dev_key')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Fix upload path
 
 # Ensure uploads directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # MongoDB Atlas connection
-mongo_uri = "mongodb+srv://lgl1876523678:1017@cluster0.k8xwe.mongodb.net/?retryWrites=true&w=majority"
+mongo_uri = os.environ.get("MONGO_URI")
 client = MongoClient(mongo_uri)
 db = client['project5_db']    
 users_collection = db['userInfo']
