@@ -30,7 +30,7 @@
                     </div>
                     
                     <!-- Post Image -->
-                    <img src="{{ post.image_url }}" class="card-img-top post-image" alt="Post by {{ post.author }}">
+                    <img src="{{ url_for('main.serve_image', post_id=post._id) }}" class="card-img-top post-image" alt="Post by {{ post.author }}">
                     
                     <div class="card-body">
                         <p class="card-text">{{ post.caption }}</p>
