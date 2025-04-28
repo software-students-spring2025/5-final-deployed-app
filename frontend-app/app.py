@@ -9,13 +9,13 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from datetime import datetime
 
 class User(UserMixin):
-    def __init__(self, id, username, email, password_hash, bio=""):
+    def __init__(self, id, username, email, password_hash, bio="", created_at=None):
         self.id = str(id)
         self.username = username
         self.email = email
         self._password_hash = password_hash
         self.bio = bio
-        self.created_at = datetime.now().isoformat()
+        self.created_at = created_at or datetime.now().isoformat()
     
     def check_password(self, password):
         return check_password_hash(self._password_hash, password)
@@ -53,7 +53,8 @@ def load_user(user_id):
             user_doc['username'],
             user_doc['email'],
             user_doc['password'],
-            user_doc.get('bio', '')
+            user_doc.get('bio', ''),
+            user_doc.get('created_at')
         )
     return None
 
@@ -72,7 +73,8 @@ def get_user_by_username(username):
             user_doc['username'],
             user_doc['email'],
             user_doc['password'],
-            user_doc.get('bio', '')
+            user_doc.get('bio', ''),
+            user_doc.get('created_at')
         )
     return None
 
@@ -241,7 +243,8 @@ def login():
                 user_doc['username'],
                 user_doc['email'],
                 user_doc['password'],
-                user_doc.get('bio', '')
+                user_doc.get('bio', ''),
+                user_doc.get('created_at')
             )
             login_user(user)
             flash('Login successful!', 'success')
