@@ -7,7 +7,6 @@
 MiniShare is a lightweight content sharing platform designed to let users connect and share moments through a simple, intuitive interface. Built as a containerized microservice application, MiniShare demonstrates modern software engineering practices while providing core social media functionality.
 
 Key features include:
-- User registration with email verification system
 - Google OAuth integration for simplified login
 - Image sharing with captions
 - User profiles with customizable bios
