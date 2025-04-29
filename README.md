@@ -86,8 +86,8 @@ Both services are containerized and can be deployed independently.
    - Create OAuth consent screen (External)
    - Create OAuth credentials (Web application)
    - Add authorized redirect URIs:
-     - `http://127.0.0.1:5001/auth/login/google/callback`
-     - `http://localhost:5001/auth/login/google/callback`
+     - `http://127.0.0.1:8080/auth/login/google/callback`
+     - `http://localhost:8080/auth/login/google/callback`
    - Get your client ID and client secret and update the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file
 
 5. Set up Gmail for email sending:
@@ -101,7 +101,7 @@ Both services are containerized and can be deployed independently.
    docker-compose up --build
    ```
 
-2. Access the application at `http://localhost:5001`
+2. Access the application at `http://localhost:8080`
 
 ### Development Setup
 
