@@ -155,7 +155,7 @@ The MiniShare application provides the following RESTful API endpoints:
   - Save settings.
   - Click Deploy.
   - Wait for build → deployment → health checks → Success.
-  -Then you can visit the website via the link generate by Digital Ocean
+  - Then you can visit the website via the link generate by Digital Ocean
 
 ## Testing
 
