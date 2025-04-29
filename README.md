@@ -1,7 +1,7 @@
 # MiniShare
 
 ![Frontend CI](https://github.com/software-students-spring2025/5-final-deployed-app/actions/workflows/frontend.yml/badge.svg)
-![DB Client CI](https://github.com/software-students-spring2025/5-final-deployed-app/actions/workflows/db.yml)
+![DB Client CI](https://github.com/software-students-spring2025/5-final-deployed-app/actions/workflows/db.yml/badge.svg)
 
 ## Project Description
 MiniShare is a lightweight content sharing platform designed to let users connect and share moments through a simple, intuitive interface. Built as a containerized microservice application, MiniShare demonstrates modern software engineering practices while providing core social media functionality.
