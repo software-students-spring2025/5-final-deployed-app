@@ -11,3 +11,8 @@ dnspython
 werkzeug
 flask-wtf
 email-validator
+flask-mail
+itsdangerous
+authlib
+requests
+markupsafe
