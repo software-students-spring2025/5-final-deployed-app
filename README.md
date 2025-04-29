@@ -151,11 +151,16 @@ The MiniShare application provides the following RESTful API endpoints:
 ### 2.Connect GitHub to DigitalOcean
 ### 3.Configure Build Settings
 ### 4.Set Environment Variables
+   - Go to DigitalOcean App → Settings → Environment Variables
+   - manually add: MONGO_URI,SECRET_KEY, and other variables
+
+
+   
 ### 5. Deploy the App
   - Save settings.
   - Click Deploy.
   - Wait for build → deployment → health checks → Success.
-  - Then you can visit the website via the link generate by Digital Ocean
+  - Then you can visit the website via the link generate by DigitalOcean
 
 ## Testing
 
