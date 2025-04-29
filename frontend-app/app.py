@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from forms import RegistrationForm, LoginForm
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from datetime import datetime
@@ -30,6 +31,9 @@ app = Flask(
     template_folder='templates',
     static_folder='static'
 )
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_dev_key')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Upload path
 
