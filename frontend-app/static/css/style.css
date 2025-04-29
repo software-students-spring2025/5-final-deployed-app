@@ -107,3 +107,27 @@ footer {
 .alert-info {
     border-left-color: #36b9cc;
 }
+
+/* Delete Post Form Styles */
+.delete-post-form {
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.delete-post-form button {
+    padding: 0.25rem 0.5rem;
+}
+
+.delete-post-form button i {
+    font-size: 0.875rem;
+}
+
+/* Confirmation Dialog Custom Styling */
+.delete-confirm-dialog {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    max-width: 300px;
+}

@@ -247,6 +247,30 @@ def add_comment(post_id):
         
     return redirect(request.referrer or url_for('main.feed'))
 
+@main_bp.route('/post/<post_id>/delete', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    # Find the post
+    post = posts_collection.find_one({"_id": ObjectId(post_id)})
+    
+    if not post:
+        flash('Post not found', 'danger')
+        return redirect(url_for('main.feed'))
+        
+    # Check if current user is the author
+    if post['author'] != current_user.username:
+        flash('You can only delete your own posts', 'danger')
+        return redirect(url_for('main.feed'))
+        
+    # Delete the post's comments
+    comments_collection.delete_many({"post_id": str(post_id)})
+    
+    # Delete the post
+    posts_collection.delete_one({"_id": ObjectId(post_id)})
+    
+    flash('Post deleted successfully', 'success')
+    return redirect(url_for('main.feed'))
+
 @main_bp.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
