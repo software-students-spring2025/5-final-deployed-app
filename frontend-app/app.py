@@ -1029,4 +1029,6 @@ def root():
 
 if __name__ == '__main__':
     # Run the application
-    app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=5001)
+    #app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=8080)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=False, host='0.0.0.0', port=port)
