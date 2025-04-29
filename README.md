@@ -5,7 +5,8 @@
 
 ## Project Description
 MiniShare is a lightweight content sharing platform designed to let users connect and share moments through a simple, intuitive interface. Built as a containerized microservice application, MiniShare demonstrates modern software engineering practices while providing core social media functionality.
-\n Visit the website here: https://mini-share-srm24.ondigitalocean.app/main/
+
+Visit the website here: https://mini-share-srm24.ondigitalocean.app/main/
 
 Key features include:
 - Google OAuth integration for simplified login
