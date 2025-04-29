@@ -44,7 +44,7 @@ Both services are containerized and can be deployed independently.
 
 1. Clone the repository:
    ```
-   git clone https://github.com/your-organization/minishare.git
+   git clone https://github.com/software-students-spring2025/5-final-deployed-app.git
    cd minishare
    ```
 
