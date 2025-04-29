@@ -23,10 +23,19 @@
                                 <strong>{{ post.author }}</strong>
                             </a>
                         </div>
-                        <!-- Display date in better format -->
-                        <small class="text-muted relative-time" data-timestamp="{{ post.created_at }}">
-                            {{ post.created_at|replace('T', ' ') }}
-                        </small>
+                        <div class="d-flex align-items-center">
+                            <!-- Add the delete button only for the post author -->
+                            {% if post.author == current_user.username %}
+                            <form action="{{ url_for('main.delete_post', post_id=post._id) }}" method="POST" class="me-2 delete-post-form">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this post? This action cannot be undone.')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            <small class="text-muted relative-time" data-timestamp="{{ post.created_at }}">
+                                {{ post.created_at|replace('T', ' ') }}
+                            </small>
+                        </div>
                     </div>
                     
                     <!-- Post Image -->
