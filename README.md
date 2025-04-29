@@ -156,6 +156,9 @@ The MiniShare application provides the following RESTful API endpoints:
    - Click Create App → GitHub Repository → select this repo.
    
 ### 3.Configure Build Settings
+   - Go to DigitalOcean App → Settings → Components→ Commands
+   - Manually edit the run command to: python frontend-app/app.py
+     
 ### 4.Set Environment Variables
    - Go to DigitalOcean App → Settings → Environment Variables
    - manually add: MONGO_URI,SECRET_KEY, and other variables
