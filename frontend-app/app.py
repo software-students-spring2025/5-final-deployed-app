@@ -104,24 +104,23 @@ def load_user(user_id):
         user_doc = users_collection.find_one({"_id": ObjectId(user_id)})
         if user_doc:
             return User(
-                user_doc['_id'],
-                user_doc['username'],
-                user_doc['email'],
-                user_doc['password'],
-                user_doc.get('bio', ''),
-                user_doc.get('created_at'),
-                user_doc.get('email_verified', False),
-                user_doc.get('google_id')
+                id=user_doc["_id"],
+                username=user_doc["username"],
+                email=user_doc["email"],
+                password_hash=user_doc["password"],
+                bio=user_doc.get("bio", ""),
+                created_at=user_doc.get("created_at"),
+                email_verified=user_doc.get("email_verified", False),
+                google_id=user_doc.get("google_id")
             )
-    except Exception as e:
-        app.logger.debug(f"load_user DB error for {user_id!r}: {e}")
-
-    # fallback for tests: they patch get_user_by_username()
-    try:
-        return get_user_by_username(user_id)
     except Exception:
-        return None
-
+        # fallback
+        try:
+            return get_user_by_username(user_id)
+        except Exception:
+            return None
+    return None
+    
 # Enhanced Gmail validation function
 def validate_gmail_format(email):
     """

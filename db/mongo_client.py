@@ -4,7 +4,11 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-client = os.environ.get("MONGO_URI")
+_mongo_uri = os.environ.get("MONGO_URI")
+if _mongo_uri:
+    client = MongoClient(_mongo_uri)
+else:
+    client = MongoClient()
 
 def get_db():
 
