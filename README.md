@@ -150,7 +150,7 @@ The MiniShare application provides the following RESTful API endpoints:
 ### 1.Prepare Your Repository
 ### 2.Connect GitHub to DigitalOcean
    - Go to DigitalOcean App Platform.
-	- Click Create App → GitHub Repository → select this repo.
+   - Click Create App → GitHub Repository → select this repo.
    
 ### 3.Configure Build Settings
 ### 4.Set Environment Variables
