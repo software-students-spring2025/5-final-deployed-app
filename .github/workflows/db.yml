@@ -1,4 +1,4 @@
-name: DB Client CI
+name: DB Client CI/CD
 
 on:
   push:
@@ -27,8 +27,23 @@ jobs:
           pip install pymongo
           pip install unittest-xml-reporting  # optional for nice output
           pip install python-dotenv
+          pip install pytest pytest-cov
 
       - name: Run database client unit tests
         run: |
           cd db
-          python -m unittest test_mongo_client.py
+          pytest test_mongo_client.py --cov=. --cov-report=term-missing
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./db
+          file: ./db/Dockerfile
+          push: true
+          tags: polariswu/db:latest
