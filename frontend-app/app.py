@@ -1,8 +1,6 @@
 import os
 import sys
 import re
-import logging
-from logging.handlers import RotatingFileHandler
 from bson import ObjectId
 from flask import Flask, render_template, redirect, url_for, flash, request, session, abort
 from markupsafe import Markup
@@ -34,36 +32,9 @@ app = Flask(
 )
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_dev_key')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Upload path
-app.config['DEBUG'] = os.environ.get('DEBUG', 'False').lower() in ['true', '1', 't']
 
 # Ensure uploads directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Configure logging
-def setup_logging(app):
-    """Configure logging for the application"""
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-        
-    file_handler = RotatingFileHandler('logs/minishare.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
-    
-    # Set the log level based on debug mode
-    if app.config['DEBUG']:
-        app.logger.setLevel(logging.DEBUG)
-    else:
-        app.logger.setLevel(logging.INFO)
-        
-    app.logger.info('MiniShare startup')
-    
-    return app
-
-# Setup logging
-app = setup_logging(app)
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
