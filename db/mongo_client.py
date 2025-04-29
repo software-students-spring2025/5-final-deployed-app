@@ -17,4 +17,4 @@ def get_db():
 def get_user_collection():
 
     db = get_db()
-    return db['userInfo']  
+    return client.get_default_database()

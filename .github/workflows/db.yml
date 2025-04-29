@@ -2,10 +2,12 @@ name: DB Client CI/CD
 
 on:
   push:
+    branches: [main]
     paths:
       - 'db/**'
       - '.github/workflows/db.yml'
   pull_request:
+    branches: [main]
     paths:
       - 'db/**'
 
