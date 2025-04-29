@@ -161,7 +161,7 @@ The MiniShare application provides the following RESTful API endpoints:
      
 ### 4.Set Environment Variables
    - Go to DigitalOcean App → Settings → Environment Variables
-   - manually add: MONGO_URI,SECRET_KEY, and other variables
+   - manually add: MONGO_URI,SECRET_KEY, GOOGLE_CLIENT_ID, and GOOGLE_CLIENT_SECRET (which are provide by .env)
 
 
    
