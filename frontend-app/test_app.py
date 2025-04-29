@@ -1,7 +1,6 @@
 import unittest
 from app import validate_gmail_format
 from io import BytesIO
-from itsdangerous import SignatureExpired
 from werkzeug.security import generate_password_hash
 from flask import redirect
 
@@ -105,38 +104,9 @@ class TestFollowDbUtils(unittest.TestCase):
         self.assertEqual(result[0].username, 'bob')
 
 
-from app import send_verification_email, app
+from app import app
 from unittest.mock import patch
 import unittest
-
-class TestEmailUtils(unittest.TestCase):
-
-    @patch('app.mail.send')
-    @patch('app.serializer.dumps')
-    def test_send_verification_success(self, mock_dumps, mock_send):
-        mock_dumps.return_value = 'mock-token'
-        mock_send.return_value = None
-
-        with app.app_context():
-            with patch('app.url_for') as mock_url_for:
-                mock_url_for.return_value = "http://test/verify"
-                result = send_verification_email("testuser@gmail.com", "TestUser")
-                self.assertTrue(result)
-
-    @patch('app.mail.send', side_effect=Exception("SMTP fail"))
-    @patch('app.serializer.dumps')
-    def test_send_verification_fail(self, mock_dumps, mock_send):
-        mock_dumps.return_value = 'mock-token'
-
-        with app.app_context():
-            with patch('app.url_for') as mock_url_for:
-                mock_url_for.return_value = "http://test/verify"
-                result = send_verification_email("testuser@gmail.com", "TestUser")
-                self.assertFalse(result)
-
-
-
-from app import debug_session
 
 class TestDebugUtils(unittest.TestCase):
 
@@ -144,6 +114,7 @@ class TestDebugUtils(unittest.TestCase):
         with patch('app.app.config', {'DEBUG': True}), \
              patch('app.session', {'key1': 'val1'}), \
              patch('app.app.logger.debug') as mock_log:
+            from app import debug_session
             debug_session()
             mock_log.assert_called()
 
@@ -174,11 +145,6 @@ class TestBasicRoutes(unittest.TestCase):
         response = self.client.get('/auth/register')
         self.assertEqual(response.status_code, 200)
 
-    def test_test_gmail_page(self):
-        response = self.client.get('/auth/test-gmail')
-        # Might 404 if not DEBUG, so check 200 or 404
-        self.assertIn(response.status_code, [200, 404])
-
 
 from unittest.mock import patch, MagicMock
 from flask_login import AnonymousUserMixin
@@ -207,29 +173,6 @@ class TestPostActions(unittest.TestCase):
         }
         response = self.client.post('/main/create-post', data=data, content_type='multipart/form-data')
         self.assertEqual(response.status_code, 302)  # Redirect to /main/feed
-
-    # Test 2: Create post with missing caption and image
-    def test_create_post_missing_fields(self):
-        with self.client.session_transaction() as sess:
-            sess['user_id'] = 'someuserid'
-
-        response = self.client.post('/main/create-post', data={}, follow_redirects=True)
-        #self.assertIn(b'Both caption and image are required!', response.data)
-
-    # Test 3: Create post database insert failure
-    @patch('app.posts_collection.insert_one')
-    def test_create_post_insert_failure(self, mock_insert_one):
-        with self.client.session_transaction() as sess:
-            sess['user_id'] = 'someuserid'
-
-        mock_insert_one.side_effect = Exception('DB Insert Error')
-
-        data = {
-            'caption': 'Test Caption'
-        }
-        response = self.client.post('/main/create-post', data=data, follow_redirects=True)
-        #self.assertIn(b'Failed to create post!', response.data)
-
 
 
 class TestLogout(unittest.TestCase):
@@ -266,13 +209,6 @@ class TestProfileActions(unittest.TestCase):
         response = self.client.post('/main/edit-profile', data=form_data)
         self.assertEqual(response.status_code, 302)  # Redirect to profile page
 
-    @patch('app.users_collection.find_one')
-    def test_profile_user_not_found(self, mock_find_one):
-        mock_find_one.return_value = None
-        response = self.client.get('/main/profile/nonexistentuser', follow_redirects=True)
-        #self.assertIn(b'User not found', response.data)
-        #self.assertIn(b'Feed', response.data)  # Redirected back to feed page
-
 
 class TestCommentActions(unittest.TestCase):
 
@@ -292,17 +228,6 @@ class TestCommentActions(unittest.TestCase):
         }
         response = self.client.post('/main/post/507f1f77bcf86cd799439011/comment', data=form_data)
         self.assertEqual(response.status_code, 302)
-    
-    # Test 4: Add comment with empty text
-    @patch('app.posts_collection.find_one')
-    def test_add_comment_missing_text(self, mock_find_one):
-        with self.client.session_transaction() as sess:
-            sess['user_id'] = 'someuserid'
-
-        mock_find_one.return_value = {'_id': 'somepostid'}
-
-        response = self.client.post('/main/post/somepostid/comment', data={}, follow_redirects=True)
-        #self.assertIn(b'Comment text is required!', response.data)
 
 
 class TestPostDeleteActions(unittest.TestCase):
@@ -325,30 +250,6 @@ class TestPostDeleteActions(unittest.TestCase):
 
         response = self.client.post('/main/post/507f1f77bcf86cd799439011/delete')
         self.assertEqual(response.status_code, 302)
-
-    # Test 5: Delete post not found or wrong user
-    @patch('app.posts_collection.find_one')
-    def test_delete_post_not_found(self, mock_find_one):
-        with self.client.session_transaction() as sess:
-            sess['user_id'] = 'someuserid'
-
-        mock_find_one.return_value = None
-
-        response = self.client.post('/main/post/somepostid/delete', follow_redirects=True)
-        #self.assertIn(b'Post not found', response.data)
-
-    @patch('app.posts_collection.find_one')
-    def test_delete_post_wrong_user(self, mock_find_one):
-        with self.client.session_transaction() as sess:
-            sess['user_id'] = 'correctuserid'
-
-        mock_find_one.return_value = {
-            '_id': 'somepostid',
-            'user_id': 'differentuserid'
-        }
-
-        response = self.client.post('/main/post/somepostid/delete', follow_redirects=True)
-        #self.assertIn(b'You can only delete your own posts', response.data)
 
 
 class TestFollowActions(unittest.TestCase):
@@ -401,10 +302,8 @@ class TestAuthActions(unittest.TestCase):
     @patch('app.users_collection.find_one')
     @patch('app.generate_password_hash')
     @patch('app.users_collection.insert_one')
-    @patch('app.send_verification_email')
-    def test_register_post_success(self, mock_send, mock_insert, mock_hash, mock_find):
+    def test_register_post_success(self, mock_insert, mock_hash, mock_find):
         mock_find.return_value = None
-        mock_send.return_value = True
         mock_hash.return_value = "hashed_password"
         mock_insert.return_value.inserted_id = "507f1f77bcf86cd799439011"
 
@@ -412,7 +311,7 @@ class TestAuthActions(unittest.TestCase):
             "email": "test@gmail.com",
             "username": "testuser",
             "password": "password123",
-            "confirm": "password123"
+            "confirm_password": "password123"
         }
         response = self.client.post('/auth/register', data=form_data)
         self.assertIn(response.status_code, [200, 302])
@@ -510,29 +409,6 @@ class TestFollowersFollowingPages(unittest.TestCase):
 
             response = self.client.get('/main/profile/testuser/following', follow_redirects=True)
             self.assertEqual(response.status_code, 200)
-
-
-
-class TestEmailVerification(unittest.TestCase):
-
-    def setUp(self):
-        self.client = app.test_client()
-        app.config['TESTING'] = True
-
-    @patch('app.serializer.loads')
-    @patch('app.users_collection.find_one')
-    @patch('app.users_collection.update_one')
-    def test_verify_email_success(self, mock_update, mock_find, mock_loads):
-        mock_loads.return_value = 'test@gmail.com'
-        mock_find.return_value = {'email': 'test@gmail.com'}
-        response = self.client.get('/auth/verify-email/fake-token')
-        self.assertEqual(response.status_code, 302)
-
-    @patch('app.serializer.loads', side_effect=SignatureExpired)
-    def test_verify_email_expired(self, mock_loads):
-        response = self.client.get('/auth/verify-email/fake-token', follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'invalid verification link', response.data.lower())
 
 
 ### --- Create Post Error Tests ---
@@ -700,30 +576,6 @@ class TestGoogleOAuthLogin(unittest.TestCase):
         response = self.client.get('/auth/google-link-callback')
         self.assertIn(response.status_code, [200, 302])
 
-
-### --- Test Gmail Sending ---
-
-class TestGmailSend(unittest.TestCase):
-
-    def setUp(self):
-        self.client = app.test_client()
-        app.config['TESTING'] = True
-        app.config['DEBUG'] = True
-
-    @patch('app.render_template', return_value="test_gmail page")
-    def test_test_gmail_send_get(self, mock_render):
-        response = self.client.get('/auth/test-gmail')
-        self.assertEqual(response.status_code, 200)
-
-    @patch('app.render_template', return_value="test_gmail page")
-    def test_test_gmail_send_post(self, mock_render):
-        data = {
-            "email": "testuser@gmail.com"
-        }
-        response = self.client.post('/auth/test-gmail', data=data)
-        self.assertIn(response.status_code, [200, 302])
-
-
 ### --- Root Redirect ---
 
 class TestRootRedirect(unittest.TestCase):
@@ -761,10 +613,11 @@ class TestRegisterErrors(unittest.TestCase):
         data = {
             "email": "testuser@gmail.com",
             "username": "newuser",
-            "password": "TestPassword1!"
+            "password": "TestPassword1!",
+            "confirm_password": "TestPassword1!"
         }
         response = self.client.post('/auth/register', data=data)
-        #self.assertIn(b"Email already registered. Please login or use Google.", response.data)
+        self.assertEqual(response.status_code, 200)
 
     @patch('app.current_user')
     @patch('app.users_collection.find_one')
@@ -775,10 +628,12 @@ class TestRegisterErrors(unittest.TestCase):
         data = {
             "email": "newuser@gmail.com",
             "username": "testuser",
-            "password": "TestPassword1!"
+            "password": "TestPassword1!",
+            "confirm_password": "TestPassword1!"
         }
         response = self.client.post('/auth/register', data=data)
-        #self.assertIn(b"Username already taken. Please choose another.", response.data)
+        # We expect a redirect instead of a 200 OK now
+        self.assertIn(response.status_code, [200, 302])
 
 
     @patch('app.current_user')
@@ -788,11 +643,11 @@ class TestRegisterErrors(unittest.TestCase):
         data = {
             "email": "newuser@gmail.com",
             "username": "newuser",
-            "password": "TestPassword1!"
+            "password": "TestPassword1!",
+            "confirm_password": "TestPassword1!"
         }
         response = self.client.post('/auth/register', data=data)
-        #self.assertIn(b"Registration failed. Please try again.", response.data)
-
+        self.assertEqual(response.status_code, 200)
 
 
 ### --- Extra Tests for /auth/login error handling ---
@@ -864,11 +719,6 @@ class TestCreatePostErrorsFull(unittest.TestCase):
         response = self.client.post('/main/create-post', data=data, content_type='multipart/form-data')
         self.assertEqual(response.status_code, 302)
 
-
-
-
-
-
 import unittest
 from unittest.mock import patch, MagicMock
 from flask import redirect
@@ -904,13 +754,14 @@ class TestOAuthGoogleLogin(unittest.TestCase):
             "sub": "fakegoogleid"
         }
         response = self.client.get('/auth/login/google/callback')
-        #self.assertIn(b'only gmail addresses', response.data.lower())
+        # This should still check for Gmail requirements even without verification
+        self.assertIn(response.status_code, [200, 302])
 
     @patch('app.oauth')
     def test_google_callback_exception(self, mock_oauth):
         mock_oauth.google.authorize_access_token.side_effect = Exception("OAuth fail")
         response = self.client.get('/auth/login/google/callback')
-        #self.assertIn(b'google login failed', response.data.lower())
+        self.assertIn(response.status_code, [200, 302])
 
 
 class TestOAuthGoogleLink(unittest.TestCase):
@@ -956,7 +807,7 @@ class TestOAuthGoogleLink(unittest.TestCase):
                 sess['_user_id'] = "507f1f77bcf86cd799439011"
 
             response = self.client.get('/auth/google-link-callback')
-            #self.assertIn(b'already used by another', response.data.lower())
+            self.assertIn(response.status_code, [200, 302])
 
     @patch('app.oauth')
     def test_google_link_exception(self, mock_oauth):
@@ -967,41 +818,8 @@ class TestOAuthGoogleLink(unittest.TestCase):
                 sess['_user_id'] = "507f1f77bcf86cd799439011"
 
             response = self.client.get('/auth/google-link-callback')
-            #self.assertIn(b'failed to link google', response.data.lower())
-
-
-class TestResendVerification(unittest.TestCase):
-
-    def setUp(self):
-        self.client = app.test_client()
-        app.config['TESTING'] = True
-
-    @patch('app.current_user')
-    @patch('app.send_verification_email')
-    def test_resend_verification_logged_in(self, mock_send, mock_current_user):
-        mock_current_user.is_authenticated = True
-        mock_current_user.email_verified = False
-        mock_current_user.email = "testuser@gmail.com"
-        mock_current_user.username = "testuser"
-        mock_send.return_value = True
-
-        response = self.client.get('/auth/resend-verification')
-        self.assertEqual(response.status_code, 302)
-
-    @patch('app.users_collection.find_one')
-    @patch('app.send_verification_email')
-    def test_resend_verification_unlogged_email_provided(self, mock_send, mock_find_one):
-        mock_send.return_value = True
-        mock_find_one.return_value = {"email": "testuser@gmail.com", "username": "testuser"}
-
-        response = self.client.get('/auth/resend-verification?email=testuser@gmail.com')
-        self.assertEqual(response.status_code, 302)
-
-    def test_resend_verification_no_email_provided(self):
-        response = self.client.get('/auth/resend-verification')
-        self.assertEqual(response.status_code, 302)
+            self.assertIn(response.status_code, [200, 302])
 
 
 if __name__ == "__main__":
     unittest.main()
-

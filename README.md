@@ -52,14 +52,6 @@ Both services are containerized and can be deployed independently.
    MONGO_URI=mongodb+srv://username:password@cluster.example.mongodb.net/?retryWrites=true&w=majority
    SECRET_KEY=your_secret_key_here
 
-   # Gmail settings (for sending verification emails)
-   MAIL_SERVER=smtp.gmail.com
-   MAIL_PORT=587
-   MAIL_USE_TLS=True
-   MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=your-app-password  
-   MAIL_DEFAULT_SENDER=your-email@gmail.com
-
    # Google OAuth settings (for "Sign in with Google")
    GOOGLE_CLIENT_ID=your_google_client_id_here
    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
@@ -134,7 +126,6 @@ The MiniShare application provides the following RESTful API endpoints:
 - **POST** `/auth/login`: Log in an existing user
 - **GET** `/auth/logout`: Log out the current user
 - **GET** `/auth/login/google`: Initiate Google OAuth login
-- **GET** `/auth/verify-email/<token>`: Verify user email with token
 
 ### User Management
 

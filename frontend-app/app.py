@@ -72,7 +72,7 @@ follows_collection = db['follows']  # Collection to store user follow relationsh
 
 # User model
 class User(UserMixin):
-    def __init__(self, id, username, email, password_hash, bio="", created_at=None, email_verified=False, google_id=None):
+    def __init__(self, id, username, email, password_hash, bio="", created_at=None, email_verified=True, google_id=None):
         self.id = str(id)
         self.username = username
         self.email = email
@@ -101,7 +101,7 @@ def load_user(user_id):
             user_doc['password'],
             user_doc.get('bio', ''),
             user_doc.get('created_at'),
-            user_doc.get('email_verified', False),
+            user_doc.get('email_verified', True),  # Default to True now
             user_doc.get('google_id')
         )
     return None
@@ -121,52 +121,6 @@ def validate_gmail_format(email):
         return False, "Invalid Gmail format. Please check your email address."
         
     return True, None
-
-# Email verification helper function optimized for Gmail
-def send_verification_email(user_email, username):
-    """Send verification email to Gmail users with improved error handling"""
-    # Ensure it's a Gmail address with proper format
-    is_valid, error = validate_gmail_format(user_email)
-    if not is_valid:
-        app.logger.warning(f"Invalid Gmail format: {user_email} - {error}")
-        return False
-        
-    token = serializer.dumps(user_email, salt='email-verification')
-    
-    verification_url = url_for(
-        'auth.verify_email', 
-        token=token, 
-        _external=True
-    )
-    
-    msg = Message('Confirm Your MiniShare Account', recipients=[user_email])
-    msg.body = f'''Hello {username},
-    
-Thank you for registering with MiniShare! Please confirm your email address by clicking on the link below:
-
-{verification_url}
-
-If you did not register for MiniShare, please ignore this email.
-
-Best regards,
-The MiniShare Team
-'''
-    # For Gmail addresses, we use the regular mail sending
-    try:
-        mail.send(msg)
-        app.logger.info(f"Verification email sent to: {user_email}")
-        return True
-    except Exception as e:
-        app.logger.error(f"Error sending email: {e}")
-        
-        # For development, print the verification link
-        if app.config['DEBUG']:
-            print("\n============= VERIFICATION LINK =============")
-            print(f"For: {user_email}")
-            print(verification_url)
-            print("============================================\n")
-            
-        return False
 
 # Debug helper for OAuth sessions
 def debug_session():
@@ -192,7 +146,7 @@ def get_user_by_username(username):
             user_doc['password'],
             user_doc.get('bio', ''),
             user_doc.get('created_at'),
-            user_doc.get('email_verified', False),
+            user_doc.get('email_verified', True),  # Default to True now
             user_doc.get('google_id')
         )
     return None
@@ -213,7 +167,7 @@ def get_followers(username):
                 user_doc['password'],
                 user_doc.get('bio', ''),
                 user_doc.get('created_at'),
-                user_doc.get('email_verified', False),
+                user_doc.get('email_verified', True),  # Default to True now
                 user_doc.get('google_id')
             )
             # Add follow timestamp
@@ -238,7 +192,7 @@ def get_following(username):
                 user_doc['password'],
                 user_doc.get('bio', ''),
                 user_doc.get('created_at'),
-                user_doc.get('email_verified', False),
+                user_doc.get('email_verified', True),  # Default to True now
                 user_doc.get('google_id')
             )
             # Add follow timestamp
@@ -529,7 +483,6 @@ def following(username):
     following = get_following(username)
     return render_template('following.html', username=username, following=following)
 
-# New route for linking Google account to existing account
 @main_bp.route('/link-google')
 @login_required
 def link_google():
@@ -549,7 +502,7 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """Register a new user with enhanced validation"""
+    """Register a new user without email verification"""
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
         
@@ -581,124 +534,29 @@ def register():
         # Generate password hash
         hashed_password = generate_password_hash(password)
 
-        # Try to send verification email first before creating account
-        email_sent = send_verification_email(email, username)
-        
-        if not email_sent and not app.config['DEBUG']:
-            flash('Unable to send verification email. Please check your email address or try Google Sign-in.', 'danger')
-            return render_template('register.html', form=form)
-
-        # MongoDB Insertion
+        # MongoDB Insertion - accounts are now automatically verified
         new_user = {
             "email": email,
             "username": username,
             "password": hashed_password,
             "bio": "",
             "created_at": datetime.now().isoformat(),
-            "email_verified": False  # Not verified until email confirmation
+            "email_verified": True  # Set to True by default now
         }
         
         result = users_collection.insert_one(new_user)
         
         if result.inserted_id:
-            if email_sent:
-                flash('Registration successful! Please check your Gmail inbox to verify your account.', 'success')
-            else:
-                # In development mode, provide a direct verification option
-                if app.config['DEBUG']:
-                    token = serializer.dumps(email, salt='email-verification')
-                    verification_url = url_for('auth.verify_email', token=token, _external=True)
-                    flash(Markup(f'Registration successful! <a href="{verification_url}" target="_blank">Click here to verify your account</a> (Development only).'), 'success')
-                else:
-                    flash('Registration successful! We could not send a verification email. Please try signing in with Google instead.', 'warning')
-            
+            flash('Registration successful! You can now log in.', 'success')
             return redirect(url_for('auth.login'))
         else:
             flash('Registration failed. Please try again.', 'danger')
     
     return render_template('register.html', form=form)
 
-@auth_bp.route('/verify-email/<token>')
-def verify_email(token):
-    """Verify user email with token - enhanced with better error handling"""
-    try:
-        email = serializer.loads(token, salt='email-verification', max_age=86400)  # 24 hour expiration
-        app.logger.info(f"Verifying email: {email}")
-        
-        # Find user and update verification status
-        user = users_collection.find_one({"email": email})
-        
-        if user:
-            users_collection.update_one(
-                {"email": email},
-                {"$set": {"email_verified": True}}
-            )
-            flash('Your email has been verified! You can now log in.', 'success')
-        else:
-            app.logger.warning(f"Verification failed - User not found with email: {email}")
-            flash('Invalid verification link. User not found with this email.', 'danger')
-            
-    except SignatureExpired:
-        app.logger.warning("Verification failed - Token expired")
-        flash('The verification link has expired. Please request a new one.', 'danger')
-    except Exception as e:
-        app.logger.error(f"Verification failed - Error: {str(e)}")
-        flash(f'Invalid verification link. Error: {str(e)}', 'danger')
-        
-    return redirect(url_for('auth.login'))
-
-@auth_bp.route('/resend-verification')
-def resend_verification():
-    """Resend email verification link with improved validation"""
-    email = request.args.get('email', '')
-    
-    if current_user.is_authenticated:
-        if current_user.email_verified:
-            flash('Your email is already verified.', 'info')
-            return redirect(url_for('main.feed'))
-            
-        # Validate email format before sending
-        is_valid, error = validate_gmail_format(current_user.email)
-        if not is_valid:
-            flash(f'Cannot send verification email: {error}', 'danger')
-            return redirect(url_for('main.feed'))
-            
-        try:
-            if send_verification_email(current_user.email, current_user.username):
-                flash('A new verification email has been sent. Please check your inbox.', 'success')
-            else:
-                flash('Could not send verification email. Please check your email address.', 'danger')
-        except Exception as e:
-            app.logger.error(f"Error sending verification email: {e}")
-            flash('Could not send verification email. Please try again later.', 'danger')
-    elif email:
-        # Handle case when user is not logged in but provided email
-        # Validate email format first
-        is_valid, error = validate_gmail_format(email)
-        if not is_valid:
-            flash(f'Cannot send verification email: {error}', 'danger')
-            return redirect(url_for('auth.login'))
-            
-        user = users_collection.find_one({"email": email})
-        if user:
-            try:
-                if send_verification_email(email, user['username']):
-                    flash('A new verification email has been sent. Please check your inbox.', 'success')
-                else:
-                    flash('Could not send verification email. Please check your email address.', 'danger')
-            except Exception as e:
-                app.logger.error(f"Error sending verification email: {e}")
-                flash('Could not send verification email. Please try again later.', 'danger')
-        else:
-            flash('Email not found.', 'danger')
-    else:
-        flash('Please log in first or provide an email address.', 'info')
-        
-    return redirect(url_for('auth.login'))
-
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login with enhanced validation and logging"""
+    """User login without email verification check"""
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
         
@@ -720,13 +578,7 @@ def login():
         user_doc = users_collection.find_one({"email": email})
 
         if user_doc and check_password_hash(user_doc['password'], password):
-            # Check if email is verified
-            if not user_doc.get('email_verified', False):
-                app.logger.warning(f"Login attempt for unverified email: {email}")
-                flash('Please verify your email before logging in. Check your Gmail inbox or request a new verification email.', 'warning')
-                return render_template('login.html', form=form, show_resend=True, email=email)
-                
-            # Login successful
+            # Login successful - no email verification check
             app.logger.info(f"Login successful for user: {user_doc['username']}")
             user = User(
                 user_doc['_id'],
@@ -735,7 +587,7 @@ def login():
                 user_doc['password'],
                 user_doc.get('bio', ''),
                 user_doc.get('created_at'),
-                user_doc.get('email_verified', False),
+                True,  # Always verified now
                 user_doc.get('google_id')
             )
             login_user(user)
@@ -811,7 +663,7 @@ def google_authorize():
                 user_by_google_id['password'],
                 user_by_google_id.get('bio', ''),
                 user_by_google_id.get('created_at'),
-                user_by_google_id.get('email_verified', True),
+                True,  # Always verified now
                 user_by_google_id.get('google_id')
             )
             login_user(user)
@@ -844,7 +696,7 @@ def google_authorize():
                     google_id
                 )
                 login_user(user)
-                flash('Your account has been linked to Google and is now verified.', 'success')
+                flash('Your account has been linked to Google!', 'success')
             else:
                 # No existing user with this email, create a new account
                 app.logger.info(f"Creating new user for Google account: {email}")
@@ -868,7 +720,7 @@ def google_authorize():
                     "password": generate_password_hash(f"google_{google_id}"),  # Create a password they can't guess
                     "bio": "",
                     "created_at": datetime.now().isoformat(),
-                    "email_verified": True,  # Google already verified the email
+                    "email_verified": True,  # Always verified
                     "google_id": google_id,
                     "profile_picture": picture
                 }
@@ -887,7 +739,7 @@ def google_authorize():
                     user_doc['password'],
                     user_doc.get('bio', ''),
                     user_doc.get('created_at'),
-                    user_doc.get('email_verified', True),
+                    True,  # Always verified
                     user_doc.get('google_id')
                 )
                 login_user(user)
@@ -980,42 +832,6 @@ def logout():
     app.logger.info(f"User logged out: {username}")
     flash('You have been logged out.', 'success')
     return redirect(url_for('main.index'))
-
-@auth_bp.route('/test-gmail', methods=['GET', 'POST'])
-def test_gmail():
-    """A simple route to test Gmail sending functionality"""
-    # Only available in debug mode
-    if not app.config['DEBUG']:
-        abort(404)
-        
-    if request.method == 'POST':
-        test_email = request.form.get('test_email', '')
-        
-        # Validate Gmail format
-        is_valid, error = validate_gmail_format(test_email)
-        if not is_valid:
-            return render_template('test_gmail.html', error=error)
-            
-        try:
-            msg = Message('MiniShare Test Email', recipients=[test_email])
-            msg.body = f'''Hello from MiniShare!
-            
-This is a test email to verify that our email system is working correctly.
-If you received this, it means our Gmail configuration is working properly.
-
-Time sent: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Best regards,
-The MiniShare Team
-'''
-            mail.send(msg)
-            app.logger.info(f"Test email sent to: {test_email}")
-            return render_template('test_gmail.html', success=f"Test email sent to {test_email}. Please check your inbox.")
-        except Exception as e:
-            app.logger.error(f"Test email sending failed: {str(e)}")
-            return render_template('test_gmail.html', error=f"Failed to send email: {str(e)}")
-            
-    return render_template('test_gmail.html')
 
 # Register blueprints
 app.register_blueprint(main_bp, url_prefix='/main')  # Use URL prefix
