@@ -147,11 +147,11 @@ The MiniShare application provides the following RESTful API endpoints:
 
 ## Deployment
 
-###1.Prepare Your Repository
-###2.Connect GitHub to DigitalOcean
-###3.Configure Build Settings
-###4.Set Environment Variables
-###5. Deploy the App
+### 1.Prepare Your Repository
+### 2.Connect GitHub to DigitalOcean
+### 3.Configure Build Settings
+### 4.Set Environment Variables
+### 5. Deploy the App
 
 ## Testing
 
