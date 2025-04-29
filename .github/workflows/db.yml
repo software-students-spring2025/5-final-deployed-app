@@ -1,0 +1,33 @@
+name: DB Client CI
+
+on:
+  push:
+    paths:
+      - 'db/**'
+      - '.github/workflows/db.yml'
+  pull_request:
+    paths:
+      - 'db/**'
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pymongo
+          pip install unittest-xml-reporting  # optional for nice output
+
+      - name: Run database client unit tests
+        run: |
+          cd db
+          python -m unittest test_mongo_client.py
