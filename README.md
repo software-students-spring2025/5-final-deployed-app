@@ -155,7 +155,30 @@ The MiniShare application provides the following RESTful API endpoints:
 
 ## Testing
 
-*Instructions for running tests will be added once implemented.*
+### DB Service Tests
+    ```
+    cd db
+    pytest
+    ```
+
+### Frontend Service Tests
+    ```
+    cd frontend-app
+    pytest
+    ```
+
+## Coverage Reports
+
+### DB Module
+    ```
+    pytest db --cov=db --cov-report=term-missing
+    ```
+
+### Frontend Module
+    ```
+    cd frontend-app
+    pytest --cov=. --cov-report=term-missing
+    ```
 
 ## Deployment
 
