@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY frontend-app/ ./
 
-EXPOSE 5001
+EXPOSE 8080
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5001", "--workers", "3"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080", "--workers", "3"]
+
