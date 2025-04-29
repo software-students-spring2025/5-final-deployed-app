@@ -145,6 +145,14 @@ The MiniShare application provides the following RESTful API endpoints:
 - **POST** `/main/post/<post_id>/comment`: Add a comment to a post
 - **POST** `/main/post/<post_id>/delete`: Delete a post
 
+## Deployment
+
+###1.Prepare Your Repository
+###2.Connect GitHub to DigitalOcean
+###3.Configure Build Settings
+###4.Set Environment Variables
+###5. Deploy the App
+
 ## Testing
 
 ### DB Service Tests
