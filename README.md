@@ -45,7 +45,7 @@ Both services are containerized and can be deployed independently.
 1. Clone the repository:
    ```
    git clone https://github.com/software-students-spring2025/5-final-deployed-app.git
-   cd minishare
+   cd 5-final-deployed-app
    ```
 
 2. Create a `.env` file in the project root based on the provided `.env.example`:
