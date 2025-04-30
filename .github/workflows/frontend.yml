@@ -54,7 +54,7 @@ jobs:
 
       - name: Determine image tag
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           else
             echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
@@ -66,10 +66,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build & push DB image
+        run: |
+          docker build -f db/Dockerfile \
+                        -t ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG \
+                        .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG
+
       - name: Build & push Frontend image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG ./frontend-app
+          docker build -f frontend-app/Dockerfile \
+                        -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG \
+                        .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG
+      
 
   deploy:
     if: github.event_name != 'pull_request'
