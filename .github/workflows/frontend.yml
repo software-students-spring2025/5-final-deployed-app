@@ -20,19 +20,6 @@ jobs:
   build-test-and-deploy:
     runs-on: ubuntu-latest
 
-    services:
-      mongo:
-        image: mongo:6.0
-        ports: ["27017:27017"]
-        options: >-
-          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      MONGO_URI: mongodb://localhost:27017/project5_db
-
     steps:
       - uses: actions/checkout@v4
 
@@ -43,10 +30,6 @@ jobs:
 
       - name: Install deps
         run: pip install -r requirements.txt
-
-      - name: Wait for MongoDB
-        run: |
-          until mongo --host localhost --eval "print('ok')"; do sleep 2; done
 
       - name: Run frontend tests
         run: |
