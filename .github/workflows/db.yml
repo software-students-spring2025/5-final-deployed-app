@@ -59,5 +59,8 @@ jobs:
 
       - name: Build & push DB image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG ./db
+          # point at db/Dockerfile but use the entire repo as context
+          docker build -f db/Dockerfile \
+                        -t ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG \
+                        .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG
