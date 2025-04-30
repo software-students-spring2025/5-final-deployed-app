@@ -1,51 +1,54 @@
 name: DB Client CI/CD
 
 on:
-  push:
-    branches: [main]
+  pull_request:
+    branches: [main]                # Run on any PR targeting main
     paths:
       - 'db/**'
       - '.github/workflows/db.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'db/**'
+  workflow_dispatch:                # Allows manual trigger with a version input
+    inputs:
+      version:
+        description: 'Image version'  # Tag for Docker image
+        required: true
 
 jobs:
-  build-test:
+  build_and_test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4                   # Fetch the code
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v4               # Install Python toolchain
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install pymongo
-          pip install unittest-xml-reporting  # optional for nice output
-          pip install python-dotenv
-          pip install pytest pytest-cov
+        run: pip install pymongo python-dotenv pytest pytest-cov
+                                                     # Bring in test & DB libs
 
-      - name: Run database client unit tests
+      - name: Run DB client unit tests
         run: |
           cd db
           pytest test_mongo_client.py --cov=. --cov-report=term-missing
+                                                     # Execute your test suite
+
+  push_to_docker_hub:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4                   # Ensure code is present
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v2                # Authenticate for push
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./db/Dockerfile
-          push: true
-          tags: polariswu/db:latest
+      - name: Build & push DB Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }} ./db
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }}
+                                                     # Tag & upload to Docker Hub
