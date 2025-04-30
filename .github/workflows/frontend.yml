@@ -2,14 +2,14 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [main]                     # Only run tests on PRs
+    branches: [main]
     paths:
       - 'frontend-app/**'
       - 'app.py'
       - 'requirements.txt'
       - '.github/workflows/frontend.yml'
   push:
-    branches: [main]                     # Full pipeline on merge to main
+    branches: [main]
     paths:
       - 'frontend-app/**'
       - 'app.py'
@@ -24,31 +24,28 @@ on:
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
-    services:
-      mongodb:
-        image: mongo:6.0                              # official Mongo image
-        ports: ["27017:27017"]                        # expose to localhost
-        options: >-
-          --health-cmd="mongo --eval 'db.adminCommand(\"ping\")'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     env:
-      MONGO_URI: mongodb://mongodb:27017/project5_db  # note “mongodb” host
+      MONGO_URI: ${{ secrets.MONGO_URI }}   
+      SECRET_KEY: ${{ secrets.SECRET_KEY }} 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: 
+        with:
           python-version: '3.12'
+
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest pytest-flask pymongo
-      - name: Run tests
+        run: |
+          pip install -r requirements.txt \
+                      pytest pytest-flask pymongo python-dotenv
+
+      - name: Run all tests
         run: pytest -q
-        
 
   push_to_docker_hub:
-    if: github.event_name != 'pull_request'  # Skip on PRs
+    if: github.event_name != 'pull_request'
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +54,7 @@ jobs:
 
       - name: Determine image tag
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           else
             echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
