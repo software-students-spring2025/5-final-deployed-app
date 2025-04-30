@@ -4,7 +4,8 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-client = os.environ.get("MONGO_URI")
+_mongo_uri = os.environ.get("MONGO_URI")
+client = MongoClient(_mongo_uri) if _mongo_uri else MongoClient()
 
 def get_db():
 
@@ -13,4 +14,4 @@ def get_db():
 def get_user_collection():
 
     db = get_db()
-    return db['userInfo']  
+    return db['userInfo']

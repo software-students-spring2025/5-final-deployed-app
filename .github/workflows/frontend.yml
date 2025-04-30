@@ -1,24 +1,34 @@
-name: Frontend CI
+name: Frontend CI/CD
 
 on:
-  push:
+  pull_request:
+    branches: [main]
     paths:
       - 'frontend-app/**'
       - 'app.py'
       - 'requirements.txt'
       - '.github/workflows/frontend.yml'
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'frontend-app/**'
       - 'app.py'
       - 'requirements.txt'
+      - '.github/workflows/frontend.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image version'
+        required: true
 
 jobs:
-  build-test:
+  build_and_test:
     runs-on: ubuntu-latest
-
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}   
+      SECRET_KEY: ${{ secrets.SECRET_KEY }} 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -28,6 +38,48 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt \
+                      pytest pytest-flask pymongo python-dotenv
 
+      - name: Run all tests
+        run: pytest -q
 
+  push_to_docker_hub:
+    if: github.event_name != 'pull_request'
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine image tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push Frontend image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG ./frontend-app
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: push_to_docker_hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl CLI
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Trigger DigitalOcean App deployment
+        run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }}

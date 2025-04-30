@@ -1,20 +1,27 @@
-name: DB Client CI
+name: DB CI
 
 on:
-  push:
+  pull_request:
+    branches: [main]                   # Run build+test on PRs against main
     paths:
       - 'db/**'
       - '.github/workflows/db.yml'
-  pull_request:
+  push:
+    branches: [main]                   # Run full pipeline on pushes to main
     paths:
       - 'db/**'
+      - '.github/workflows/db.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image version'   # Manual input for tagging
+        required: true
 
 jobs:
-  build-test:
+  build_and_test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -22,13 +29,35 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install dependencies & run tests
         run: |
-          pip install pymongo
-          pip install unittest-xml-reporting  # optional for nice output
-          pip install python-dotenv
-
-      - name: Run database client unit tests
-        run: |
+          pip install pymongo python-dotenv pytest pytest-cov
           cd db
-          python -m unittest test_mongo_client.py
+          pytest test_mongo_client.py --cov=. --cov-report=term-missing
+
+  push_to_docker_hub:
+    if: github.event_name != 'pull_request'    # Skip on PRs
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine image tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2           # Authenticate with Docker Hub
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push DB image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG ./db
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG
