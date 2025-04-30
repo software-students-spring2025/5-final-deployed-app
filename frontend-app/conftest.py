@@ -1,27 +1,40 @@
 import pytest
 from unittest.mock import MagicMock
-import app  # your Flask app module
+from flask import redirect
+import app
 
 @pytest.fixture(autouse=True)
-def mock_db_collections(monkeypatch):
+def mock_external_services(monkeypatch):
     """
-    Autouse fixture to mock all MongoDB collections in app.
-    This prevents any real network calls and lets tests patch
-    collection methods (find_one, insert_one, etc.) directly.
+    Autouse fixture to:
+      1) Replace pymongo.MongoClient and app.client with a MagicMock,
+         so no real MongoDB is ever contacted.
+      2) Patch oauth.google.authorize_redirect to return a Flask redirect,
+         satisfying TestGoogleLink without AsyncMocks leaking into JSON.
     """
-    # Create fake collection objects
-    fake_users    = MagicMock(name="users_collection")
-    fake_posts    = MagicMock(name="posts_collection")
-    fake_comments = MagicMock(name="comments_collection")
-    fake_follows  = MagicMock(name="follows_collection")
 
-    # Override the collections in the app module
-    monkeypatch.setattr(app, "users_collection",    fake_users)
-    monkeypatch.setattr(app, "posts_collection",    fake_posts)
-    monkeypatch.setattr(app, "comments_collection", fake_comments)
-    monkeypatch.setattr(app, "follows_collection",  fake_follows)
+    # --- 1) Mock MongoDB Client ---
+    fake_client     = MagicMock(name="MongoClient()")
+    fake_database   = MagicMock(name="fake_database")
+    fake_collection = MagicMock(name="fake_collection")
 
-    # Also mock the MongoClient itself in case it’s used elsewhere
-    monkeypatch.setattr("pymongo.MongoClient", MagicMock())
+    # Any client[...] returns our fake_database
+    fake_client.__getitem__.return_value = fake_database
+    # Any fake_database[...] returns our fake_collection
+    fake_database.__getitem__.return_value = fake_collection
+
+    # Patch pymongo.MongoClient(...) ⇒ fake_client
+    monkeypatch.setattr("pymongo.MongoClient", MagicMock(return_value=fake_client))
+    # If your code uses a module-level `client = MongoClient(...)`, override it too
+    monkeypatch.setattr(app, "client", fake_client)
+
+    # --- 2) Mock Google OAuth redirect ---
+    # Replace oauth.google.authorize_redirect(...) ⇒ Flask redirect(...)
+    # This avoids AsyncMock objects in the response.
+    monkeypatch.setattr(
+        app.oauth.google,
+        "authorize_redirect",
+        lambda uri: redirect(uri)
+    )
 
     return
