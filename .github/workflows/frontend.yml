@@ -2,20 +2,20 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [main]              # Run on any PR vs main
+    branches: [main]                     # Only run tests on PRs
     paths:
       - 'frontend-app/**'
       - 'app.py'
       - 'requirements.txt'
       - '.github/workflows/frontend.yml'
   push:
-    branches: [main]              # Also run on direct push to main
+    branches: [main]                     # Full pipeline on merge to main
     paths:
       - 'frontend-app/**'
       - 'app.py'
       - 'requirements.txt'
       - '.github/workflows/frontend.yml'
-  workflow_dispatch:              # Manual trigger with version input
+  workflow_dispatch:
     inputs:
       version:
         description: 'Image version'
@@ -25,27 +25,26 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4           # Fetch repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4       # Install Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt pytest pytest-flask  # Bring in Flask + test libraries
+        run: pip install -r requirements.txt pytest pytest-flask
 
-      - name: Run frontend tests
-        working-directory: frontend-app
-        run: pytest                                        # Execute all test_app.py
+      - name: Run all tests
+        run: pytest -q                 # Runs test_app.py and any tests under frontend-app/
 
   push_to_docker_hub:
+    if: github.event_name != 'pull_request'  # Skip on PRs
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Determine image tag
@@ -57,7 +56,7 @@ jobs:
           fi
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2          # Authenticate to Docker Hub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -65,9 +64,10 @@ jobs:
       - name: Build & push Frontend image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG ./frontend-app
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG  # Tag & upload
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
@@ -76,5 +76,5 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Trigger DO App deployment
+      - name: Trigger DigitalOcean App deployment
         run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }}
