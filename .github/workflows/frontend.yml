@@ -2,47 +2,44 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [main]                    # Trigger on any PR targeting main
+    branches: [main]              # Run on any PR vs main
+    paths:
+      - 'frontend-app/**'
+      - 'app.py'
+      - 'requirements.txt'
+      - '.github/workflows/frontend.yml'
   push:
-    branches: [main]                    # Trigger on push to main (e.g. merged PR)
-  workflow_dispatch:
+    branches: [main]              # Also run on direct push to main
+    paths:
+      - 'frontend-app/**'
+      - 'app.py'
+      - 'requirements.txt'
+      - '.github/workflows/frontend.yml'
+  workflow_dispatch:              # Manual trigger with version input
     inputs:
       version:
-        description: 'Image version'    # Manual input to tag images
+        description: 'Image version'
         required: true
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
-    env:
-      MONGO_URI: mongodb://db:27017/project5_db  # Point tests at the db service
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4               # Fetch repository
+        uses: actions/checkout@v4           # Fetch repository
 
-      - name: Create .env for CI
+      - name: Set up Python
+        uses: actions/setup-python@v4       # Install Python
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
         run: |
-          echo "MONGO_URI=$MONGO_URI" > .env    # Write Mongo URI into a .env
-
-      - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install docker-compose -y  # Install docker-compose
-
-      - name: Start services
-        run: docker-compose up --build -d         # Build & start db + web containers
-
-      - name: Wait for services
-        run: sleep 10                             # Give Mongo time to initialize
-
-      - name: Install Python dependencies
-        working-directory: frontend-app
-        run: |
-          pip install -r ../requirements.txt pytest pytest-flask
+          pip install -r requirements.txt pytest pytest-flask  # Bring in Flask + test libraries
 
       - name: Run frontend tests
         working-directory: frontend-app
-        run: pytest                               # Execute test suite
+        run: pytest                                        # Execute all test_app.py
 
   push_to_docker_hub:
     needs: build_and_test
@@ -60,7 +57,7 @@ jobs:
           fi
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2            # Authenticate to Docker Hub
+        uses: docker/login-action@v2          # Authenticate to Docker Hub
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -68,16 +65,16 @@ jobs:
       - name: Build & push Frontend image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG ./frontend-app
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG   # Tag & upload
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG  # Tag & upload
 
   deploy:
     needs: push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
       - name: Install doctl CLI
-        uses: digitalocean/action-doctl@v2         # Install DigitalOcean CLI
+        uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Trigger DO App deployment
-        run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }}  # Deploy new image
+        run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }}
