@@ -1,54 +1,58 @@
-name: DB Client CI/CD
+name: DB CI
 
 on:
   pull_request:
-    branches: [main]                # Run on any PR targeting main
-    paths:
-      - 'db/**'
-      - '.github/workflows/db.yml'
-  workflow_dispatch:                # Allows manual trigger with a version input
+    branches: [main]                    # Trigger on any PR targeting main
+  push:
+    branches: [main]                    # Trigger on push to main (e.g. merged PR)
+  workflow_dispatch:
     inputs:
       version:
-        description: 'Image version'  # Tag for Docker image
+        description: 'Image version'    # Manual input to tag DB image
         required: true
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4                   # Fetch the code
+      - name: Checkout code
+        uses: actions/checkout@v4             # Fetch repository
 
       - name: Set up Python
-        uses: actions/setup-python@v4               # Install Python toolchain
+        uses: actions/setup-python@v4         # Install Python
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install pymongo python-dotenv pytest pytest-cov
-                                                     # Bring in test & DB libs
+        run: pip install pymongo python-dotenv pytest pytest-cov  # DB & test libs
 
-      - name: Run DB client unit tests
+      - name: Run DB client tests
         run: |
           cd db
-          pytest test_mongo_client.py --cov=. --cov-report=term-missing
-                                                     # Execute your test suite
+          pytest test_mongo_client.py --cov=. --cov-report=term-missing  # Execute tests
 
   push_to_docker_hub:
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4                   # Ensure code is present
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine image tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
+          fi
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2                # Authenticate for push
+        uses: docker/login-action@v2            # Authenticate to Docker Hub
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push DB Docker image
+      - name: Build & push DB image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }} ./db
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }}
-                                                     # Tag & upload to Docker Hub
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG ./db
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:$TAG        # Tag & upload

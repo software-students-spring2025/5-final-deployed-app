@@ -2,70 +2,82 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [main]                    # Trigger on any PR to main
+    branches: [main]                    # Trigger on any PR targeting main
+  push:
+    branches: [main]                    # Trigger on push to main (e.g. merged PR)
   workflow_dispatch:
     inputs:
       version:
-        description: 'Image version'    # Manual trigger input for tagging images
+        description: 'Image version'    # Manual input to tag images
         required: true
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     env:
-      MONGO_URI: mongodb://db:27017/project5_db  # Connection string for MongoDB in tests
+      MONGO_URI: mongodb://db:27017/project5_db  # Point tests at the db service
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4               # Fetch repository
+
+      - name: Create .env for CI
+        run: |
+          echo "MONGO_URI=$MONGO_URI" > .env    # Write Mongo URI into a .env
 
       - name: Install Docker Compose
         run: |
-          sudo apt-get update                    # Update packages
-          sudo apt-get install docker-compose -y # Install Docker Compose
+          sudo apt-get update
+          sudo apt-get install docker-compose -y  # Install docker-compose
 
       - name: Start services
-        run: docker-compose up --build -d       # Build and launch all containers (db + web)
+        run: docker-compose up --build -d         # Build & start db + web containers
 
-      - name: Wait for MongoDB to be ready
-        run: sleep 10                           # Allow time for mongo to fully start
+      - name: Wait for services
+        run: sleep 10                             # Give Mongo time to initialize
 
-      - name: Install dependencies & run tests
+      - name: Install Python dependencies
         working-directory: frontend-app
         run: |
           pip install -r ../requirements.txt pytest pytest-flask
-          pytest                                 # Execute frontend test suite
+
+      - name: Run frontend tests
+        working-directory: frontend-app
+        run: pytest                               # Execute test suite
 
   push_to_docker_hub:
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Docker Hub username secret
-          password: ${{ secrets.DOCKERHUB_TOKEN }}     # Docker Hub token secret
-
-      - name: Build & push DB image
+      - name: Determine image tag
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }} ./db
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/db:${{ github.event.inputs.version }}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2            # Authenticate to Docker Hub
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push Frontend image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:${{ github.event.inputs.version }} ./frontend-app
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:${{ github.event.inputs.version }}
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG ./frontend-app
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend-app:$TAG   # Tag & upload
 
   deploy:
     needs: push_to_docker_hub
     runs-on: ubuntu-latest
     steps:
       - name: Install doctl CLI
-        uses: digitalocean/action-doctl@v2
+        uses: digitalocean/action-doctl@v2         # Install DigitalOcean CLI
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}  # DO API token
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Trigger DigitalOcean App deployment
-        run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }} # Deploy latest images
+      - name: Trigger DO App deployment
+        run: doctl apps create-deployment ${{ secrets.DIGITALOCEAN_APP_ID }}  # Deploy new image
