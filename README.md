@@ -83,10 +83,6 @@ Both services are containerized and can be deployed independently.
      - `http://localhost:8080/auth/login/google/callback`
    - Get your client ID and client secret and update the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file
 
-5. Set up Gmail for email sending:
-   - Create an App Password for your Gmail account ([instructions](https://support.google.com/accounts/answer/185833))
-   - Update the `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER` in your `.env` file
-
 ### Running the Application
 
 1. Build and start the services using Docker Compose:
@@ -147,19 +143,19 @@ The MiniShare application provides the following RESTful API endpoints:
 
 ## Deployment
 
-### 1.Prepare Your Repository
+### 1. Prepare Your Repository
    - Clone this project to your repository
    - add .env file locally (not pushed) into your root directory
 
-### 2.Connect GitHub to DigitalOcean
+### 2. Connect GitHub to DigitalOcean
    - Go to DigitalOcean App Platform.
    - Click Create App → GitHub Repository → select this repo.
    
-### 3.Configure Build Settings
+### 3. Configure Build Settings
    - Go to DigitalOcean App → Settings → Components→ Commands
    - Manually edit the run command to: python frontend-app/app.py
      
-### 4.Set Environment Variables
+### 4. Set Environment Variables
    - Go to DigitalOcean App → Settings → Environment Variables
    - manually add: MONGO_URI,SECRET_KEY, GOOGLE_CLIENT_ID, and GOOGLE_CLIENT_SECRET (which are provide by .env)
 
